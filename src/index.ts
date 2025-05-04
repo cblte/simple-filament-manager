@@ -72,19 +72,10 @@ app.get('/', async (c) => {
       </head>
       <body class="p-8 font-sans">
         <h1 class="text-2xl font-bold mb-4">Filament Manager</h1>
-
-        <form action="/filaments" method="POST" class="mb-8 grid grid-cols-2 gap-4 max-w-2xl">
-          <input type="text" name="name" placeholder="Name" required class="p-2 border rounded">
-          <input type="text" name="material" placeholder="Material" required class="p-2 border rounded">
-          <input type="text" name="color" placeholder="Farbe" class="p-2 border rounded">
-          <input type="number" step="0.01" name="diameter" placeholder="Durchmesser" class="p-2 border rounded">
-          <input type="number" name="weight_g" placeholder="Gewicht (g)" class="p-2 border rounded">
-          <input type="number" name="spool_weight_g" placeholder="Spulengewicht (g)" class="p-2 border rounded">
-          <input type="number" name="print_temp_min" placeholder="Temp min" class="p-2 border rounded">
-          <input type="number" name="print_temp_max" placeholder="Temp max" class="p-2 border rounded">
-          <input type="number" step="0.01" name="price_eur" placeholder="Preis (€)" class="p-2 border rounded">
-          <button type="submit" class="col-span-2 bg-blue-600 text-white py-2 rounded">Filament hinzufügen</button>
-        </form>
+        <p class="mb-4">Verwalte deine Filamente für den 3D-Druck. Du kannst deine Filamente hinzufügen, bearbeiten und löschen.</p>
+        <p class="mb-4">
+          <a href="/filaments/new" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 inline-block">Neues Filament hinzufügen</a>
+        </p>
 
         <table class="table-auto border-collapse border w-full max-w-4xl">
           <thead>
@@ -142,6 +133,35 @@ app.get('/', async (c) => {
       </body>
     </html>
   `);
+});
+
+// Route für das Erstellen eines neuen Filaments
+app.get('/filaments/new', (c) => {
+  return c.html(`
+    <html>
+      <head>
+        <title>Neues Filament - Filament Manager</title>
+        <link href="/public/output.css" rel="stylesheet">
+      </head>
+      <body class="p-8 font-sans">
+        <h1 class="text-2xl font-bold mb-4">Filament Manager</h1>
+
+        <form action="/filaments" method="POST" class="mb-8 grid grid-cols-2 gap-4 max-w-2xl">
+          <input type="text" name="name" placeholder="Name" required class="p-2 border rounded">
+          <input type="text" name="material" placeholder="Material" required class="p-2 border rounded">
+          <input type="text" name="color" placeholder="Farbe" class="p-2 border rounded">
+          <input type="number" step="0.01" name="diameter" placeholder="Durchmesser" class="p-2 border rounded">
+          <input type="number" name="weight_g" placeholder="Gewicht (g)" class="p-2 border rounded">
+          <input type="number" name="spool_weight_g" placeholder="Spulengewicht (g)" class="p-2 border rounded">
+          <input type="number" name="print_temp_min" placeholder="Temp min" class="p-2 border rounded">
+          <input type="number" name="print_temp_max" placeholder="Temp max" class="p-2 border rounded">
+          <input type="number" step="0.01" name="price_eur" placeholder="Preis (€)" class="p-2 border rounded">
+          <button type="submit" class="bg-blue-600 text-white py-2 rounded w-full">Filament hinzufügen</button>
+        </form>
+
+        <a href="/" class="text-gray-600 underline">Zurück zur Übersicht</a>
+      </body>
+    </html>`);
 });
 
 // Route für das Hinzufügen eines Filaments
