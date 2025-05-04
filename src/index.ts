@@ -33,11 +33,15 @@ app.use('*', logger());
 app.use('/public/*', serveStatic({ root: './' }));
 
 // Filament List aus der Datenbank abrufen
-async function fetchFilaments(): Promise<Filament[]> {
+async function fetchFilaments(material: string): Promise<Filament[]> {
   try {
-    const result = await db.select().from(filaments).orderBy(desc(filaments.created_at));
+    const query = db.select().from(filaments).orderBy(desc(filaments.created_at));
+    if (material) {
+      query.where(eq(filaments.material, material));
+    }
+    const result = await query;
 
-    return result as unknown as Filament[];
+    return result as Filament[];
   } catch (error) {
     console.error('Error fetching filaments:', error);
     return [];
@@ -61,8 +65,16 @@ function parseFilamentFormData(formData: FormData): Partial<Filament> {
 
 // Index Route
 app.get('/', async (c) => {
+  const material = c.req.query('material') || '';
+  const color = c.req.query('color') || '';
   // Abrufen der Filamentliste
-  const filaments = await fetchFilaments();
+  const filaments = await fetchFilaments(material);
+
+  // Materialliste dynamisch ermitteln
+  const materialOptions = Array.from(new Set(filaments.map((f) => f.material).filter(Boolean))).sort();
+
+  // Farbenliste dynamisch ermitteln
+  const colorOptions = Array.from(new Set(filaments.map((f) => f.color).filter(Boolean))).sort();
 
   return c.html(`
     <html>
@@ -70,66 +82,79 @@ app.get('/', async (c) => {
         <title>Filament Manager</title>
         <link href="/public/output.css" rel="stylesheet">
       </head>
-      <body class="p-8 font-sans">
+      <body class="p-6 font-sans bg-gray-50 text-gray-800">
         <h1 class="text-2xl font-bold mb-4">Filament Manager</h1>
         <p class="mb-4">Verwalte deine Filamente für den 3D-Druck. Du kannst deine Filamente hinzufügen, bearbeiten und löschen.</p>
-        <p class="mb-4">
-          <a href="/filaments/new" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 inline-block">Neues Filament hinzufügen</a>
+        <p class="mb-6">
+          <a href="/filaments/new" class="inline-block bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded shadow">➕ Neues Filament</a>
         </p>
 
-        <table class="table-auto border-collapse border w-full max-w-4xl">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="border p-2">Name</th>
-              <th class="border p-2">Material</th>
-              <th class="border p-2">Farbe</th>
-              <th class="border p-2">Durchmesser</th>
-              <th class="border p-2">Gewicht</th>
-              <th class="border p-2">Spule</th>
-              <th class="border p-2">Temp</th>
-              <th class="border p-2">Preis</th>
-              <th class="border p-2">Aktion</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${
-              filaments.length === 0
-                ? `<tr><td colspan="9" class="p-4 text-center text-gray-500">Keine Einträge vorhanden</td></tr>`
-                : filaments
-                    .map(
-                      (f) => `
-                  <tr>
-                    <td class="border p-2">${f.name}</td>
-                    <td class="border p-2">${f.material}</td>
-                    <td class="border p-2">${f.color || '-'}</td>
-                    <td class="border p-2">${f.diameter ?? '-'}</td>
-                    <td class="border p-2">${f.weight_g ?? '-'}</td>
-                    <td class="border p-2">${f.spool_weight_g ?? '-'}</td>
-                    <td class="border p-2">${f.print_temp_min ?? '-'}–${f.print_temp_max ?? '-'}</td>
-                    <td class="border p-2">${f.price_eur ?? '-'}</td>
-                    <td class="border p-2">
-                      <div class="flex gap-2">
-                        <form action="/filaments/${f.id}/edit" method="get">
-                          <button class="text-blue-600 cursor-pointer" aria-label="Bearbeiten">
-                            ✏️
-                          </button>
-                        </form>
-                        <form action="/filaments/${
-                          f.id
-                        }/delete" method="post" onsubmit="return confirm('Wirklich löschen?')">
-                          <button class="text-red-600 cursor-pointer" aria-label="Löschen">
-                            🗑️
-                          </button>
-                        </form>
+        <div class="mb-4">
+        <form method="GET" class="mb-6 flex flex-wrap gap-2 items-center">
+          ${materialOptions
+            .map((mat) => {
+              const isActive = material === mat;
+              return `
+                <button
+                  type="submit"
+                  name="material"
+                  value="${mat}"
+                  class="${
+                    isActive ? 'bg-sky-700 text-white' : 'bg-gray-200 text-gray-700'
+                  } px-4 py-1 rounded-full text-sm hover:bg-sky-600 hover:text-white transition"
+                >
+                  ${mat}
+                </button>
+              `;
+            })
+            .join('')}
+          ${
+            material
+              ? `<a href="/" class="ml-2 underline text-sm text-gray-500 hover:text-gray-700">Filter zurücksetzen</a>`
+              : ''
+          }
+        </form>
+
+        </div>
+
+        ${
+          filaments.length === 0
+            ? `<p class="text-center text-gray-500">Keine Einträge vorhanden.</p>`
+            : `
+              <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
+                ${filaments
+                  .map(
+                    (f) => `
+                      <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex flex-col justify-between">
+                        <div>
+                          <h2 class="text-lg font-semibold text-sky-700 mb-2">${f.name}</h2>
+                          <div class="text-sm text-gray-700 space-y-1">
+                            <div><strong>Material:</strong> ${f.material}</div>
+                            <div><strong>Farbe:</strong> ${f.color || '-'}</div>
+                            <div><strong>Durchmesser:</strong> ${f.diameter ?? '-'} mm</div>
+                            <div><strong>Gewicht:</strong> ${f.weight_g ?? '-'} g</div>
+                            <div><strong>Spule:</strong> ${f.spool_weight_g ?? '-'} g</div>
+                            <div><strong>Temp:</strong> ${f.print_temp_min}–${f.print_temp_max} °C</div>
+                            <div><strong>Preis:</strong> ${f.price_eur} €</div>
+                          </div>
+                        </div>
+                        <div class="mt-4 flex gap-4">
+                          <form action="/filaments/${f.id}/edit" method="get">
+                            <button class="text-sky-700 underline hover:opacity-80" aria-label="Bearbeiten">✏️ Bearbeiten</button>
+                          </form>
+                          <form action="/filaments/${
+                            f.id
+                          }/delete" method="post" onsubmit="return confirm('Wirklich löschen?')">
+                            <button class="text-red-600 underline hover:opacity-80" aria-label="Löschen">🗑️ Löschen</button>
+                          </form>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                `
-                    )
-                    .join('')
-            }
-          </tbody>
-        </table>
+                    `
+                  )
+                  .join('')}
+              </div>
+            `
+        }
       </body>
     </html>
   `);
@@ -146,17 +171,17 @@ app.get('/filaments/new', (c) => {
       <body class="p-8 font-sans">
         <h1 class="text-2xl font-bold mb-4">Filament Manager</h1>
 
-        <form action="/filaments" method="POST" class="mb-8 grid grid-cols-2 gap-4 max-w-2xl">
-          <input type="text" name="name" placeholder="Name" required class="p-2 border rounded">
-          <input type="text" name="material" placeholder="Material" required class="p-2 border rounded">
-          <input type="text" name="color" placeholder="Farbe" class="p-2 border rounded">
-          <input type="number" step="0.01" name="diameter" placeholder="Durchmesser" class="p-2 border rounded">
-          <input type="number" name="weight_g" placeholder="Gewicht (g)" class="p-2 border rounded">
-          <input type="number" name="spool_weight_g" placeholder="Spulengewicht (g)" class="p-2 border rounded">
-          <input type="number" name="print_temp_min" placeholder="Temp min" class="p-2 border rounded">
-          <input type="number" name="print_temp_max" placeholder="Temp max" class="p-2 border rounded">
-          <input type="number" step="0.01" name="price_eur" placeholder="Preis (€)" class="p-2 border rounded">
-          <button type="submit" class="bg-blue-600 text-white py-2 rounded w-full">Filament hinzufügen</button>
+        <form action="/filaments" method="POST" class="flex flex-wrap gap-4 max-w-2xl">
+          <input name="name" placeholder="Name" required class="p-2 border rounded w-full md:w-[48%] bg-gray-50">
+          <input name="material" placeholder="Material" required class="p-2 border rounded w-full md:w-[48%] bg-gray-50">
+          <input name="color" placeholder="Farbe" class="p-2 border rounded w-full md:w-[48%] bg-gray-50">
+          <input name="diameter" type="number" step="0.01" placeholder="Durchmesser" class="p-2 border rounded w-full md:w-[48%] bg-gray-50">
+          <input name="weight_g" type="number" placeholder="Gewicht (g)" class="p-2 border rounded w-full md:w-[48%] bg-gray-50">
+          <input name="spool_weight_g" type="number" placeholder="Spulengewicht (g)" class="p-2 border rounded w-full md:w-[48%] bg-gray-50">
+          <input name="print_temp_min" type="number" placeholder="Temp min" class="p-2 border rounded w-full md:w-[48%] bg-gray-50">
+          <input name="print_temp_max" type="number" placeholder="Temp max" class="p-2 border rounded w-full md:w-[48%] bg-gray-50">
+          <input name="price_eur" type="number" step="0.01" placeholder="Preis (€)" class="p-2 border rounded w-full md:w-[48%] bg-gray-50">
+          <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-2 rounded shadow">Filament hinzufügen</button>
         </form>
 
         <a href="/" class="text-gray-600 underline">Zurück zur Übersicht</a>
@@ -273,7 +298,7 @@ app.get('/filaments/:id/edit', async (c) => {
             }" class="p-2 border rounded">
 
             <div class="col-span-2 flex gap-4 pt-4">
-              <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Speichern</button>
+              <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded">Speichern</button>
               <button type="button" onclick="window.location.href='/'" class="text-gray-600 underline self-center">Abbrechen</button>
             </div>
           </form>
