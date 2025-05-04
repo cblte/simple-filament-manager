@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { logger } from 'hono/logger';
 import { filaments } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
+import { serveStatic } from 'hono/bun';
 
 // Importiere die Datenbankverbindung
 const db = drizzle(process.env.POSTGRES_URL!);
@@ -27,6 +28,9 @@ const app = new Hono();
 
 // Logging Middleware hinzufügen
 app.use('*', logger());
+
+// Middleware für statische Dateien hinzufügen
+app.use('/public/*', serveStatic({ root: './' }));
 
 // Filament List aus der Datenbank abrufen
 async function fetchFilaments(): Promise<Filament[]> {
@@ -64,7 +68,7 @@ app.get('/', async (c) => {
     <html>
       <head>
         <title>Filament Manager</title>
-        <link href="/output.css" rel="stylesheet">
+        <link href="/public/output.css" rel="stylesheet">
       </head>
       <body class="p-8 font-sans">
         <h1 class="text-2xl font-bold mb-4">Filament Manager</h1>
@@ -113,14 +117,20 @@ app.get('/', async (c) => {
                     <td class="border p-2">${f.print_temp_min ?? '-'}–${f.print_temp_max ?? '-'}</td>
                     <td class="border p-2">${f.price_eur ?? '-'}</td>
                     <td class="border p-2">
-                      <form action="/filaments/${f.id}/edit" method="GET">
-                        <button class="text-blue-600 underline">Bearbeiten</button>
-                      </form>
-                      <form action="/filaments/${
-                        f.id
-                      }/delete" method="POST" onsubmit="return confirm('Wirklich löschen?')">
-                        <button class="text-red-600 underline">Löschen</button>
-                      </form>
+                      <div class="flex gap-2">
+                        <form action="/filaments/${f.id}/edit" method="get">
+                          <button class="text-blue-600 cursor-pointer" aria-label="Bearbeiten">
+                            ✏️
+                          </button>
+                        </form>
+                        <form action="/filaments/${
+                          f.id
+                        }/delete" method="post" onsubmit="return confirm('Wirklich löschen?')">
+                          <button class="text-red-600 cursor-pointer" aria-label="Löschen">
+                            🗑️
+                          </button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 `
@@ -199,7 +209,7 @@ app.get('/filaments/:id/edit', async (c) => {
       <html>
         <head>
           <title>Filament bearbeiten</title>
-          <link href="/output.css" rel="stylesheet">
+          <link href="/public/output.css" rel="stylesheet">
         </head>
         <body class="p-8 font-sans bg-gray-50">
           <h1 class="text-xl font-bold mb-6">Filament bearbeiten</h1>
