@@ -1,7 +1,12 @@
 {
   "name": "simple-fm",
+  "version": "1.0.0",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "css": "bunx @tailwindcss/cli -i ./src/styles/global.css -o ./public/output.css --minify",
+    "migrate": "bunx drizzle-kit migrate",
+    "build": "bun run css && bunx drizzle-kit generate && bun build src/index.ts --target=bun --outdir=dist && cp -r public dist/public",
+    "start": "bun run migrate && bun run dist/index.js"
   },
   "dependencies": {
     "drizzle-orm": "^0.43.1",
