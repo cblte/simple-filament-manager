@@ -139,6 +139,7 @@ app.get('/', async (c) => {
             ? `<p class="text-center text-gray-500">No entries available.</p>`
             : `
               <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
+                <!-- filaments -->
                 ${filaments
                   .map(({ filament: f, spool: s }) => {
                     const spoolWeight = s.spool_weight_g ?? 0;
@@ -147,13 +148,9 @@ app.get('/', async (c) => {
                       s.material_weight_g > 0 ? Math.round((remaining / s.material_weight_g) * 100) : 0;
 
                     return `
-                        <div class="relative rounded-lg shadow-sm p-4 bg-white border border-gray-200">
-                        <div class="absolute left-0 top-0 bottom-0 w-8 rounded-l" style="background-color: ${
-                          s.color_hex ?? '#e5e7eb'
-                        };"></div>
-
-
-                        <div class="ml-6 flex flex-col gap-2">
+                      <div class="rounded-lg shadow-sm p-4 bg-white border border-gray-200 flex items-start justify-between gap-3">
+                        <!-- Content -->
+                        <div class="flex-grow flex flex-col gap-2">
                           <h2 class="text-lg font-semibold text-gray-800 mb-1">${f.name}</h2>
                           <p class="text-sm text-gray-600">
                             <strong>Type:</strong> ${s.brand} ${s.material} – ${s.color_name}
@@ -161,25 +158,24 @@ app.get('/', async (c) => {
 
                           ${(() => {
                             return `
-                                <p class="text-sm text-gray-700">
-                                  <strong>Weight:</strong> ${remaining}g
-                                  <span class="text-xs text-gray-500">(${f.weight_g}g - ${s.spool_weight_g}g)</span>
-                                </p>
-                                <div class="">
-                                  <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full rounded-full transition-all duration-300"
-                                      style="width: ${percentage}%; background-color: ${
+                          <p class="text-sm text-gray-700">
+                            <strong>Weight:</strong> ${remaining}g
+                            <span class="text-xs text-gray-500">(${f.weight_g}g - ${s.spool_weight_g}g)</span>
+                          </p>
+                          <div class="">
+                            <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                              <div class="h-full rounded-full transition-all duration-300"
+                                style="width: ${percentage}%; background-color: ${
                               percentage > 60
                                 ? '#10b981' // green
                                 : percentage > 30
                                 ? '#f59e0b' // yellow
                                 : '#ef4444' // red
                             };">
-                                    </div>
-                                  </div>
-                                  <p class="text-xs text-gray-500 mt-1">${percentage}% available</p>
-                                </div>
-                              `;
+                              </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">${percentage}% available</p>
+                          </div>`;
                           })()}
 
                           <p class="text-sm text-gray-700">
@@ -205,12 +201,26 @@ app.get('/', async (c) => {
                             </form>
                           </div>
                         </div>
-                      </div>
-                    `;
+
+                        <!-- Color Indicator -->
+                        <div class="relative">
+                          <div class="absolute right-0 top-0">
+                            <div class="relative w-20 h-20 rounded-lg" style="background-color: ${
+                              s.color_hex ?? '#ffffff'
+                            };">
+                            <img
+                              src="/public/spool-overlay.png"
+                              alt="Filament Overlay"
+                              class="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                            />
+                          </div>
+                          </div>
+
+                        </div>
+                      </div>`;
                   })
                   .join('')}
-              </div>
-            `
+              </div>`
         }
       </body>
     </html>
@@ -253,10 +263,7 @@ app.get('/spools', async (c) => {
             ${spoolsWithCount
               .map(
                 (s) => `
-              <div class="relative rounded-lg shadow-sm p-4 bg-white border border-gray-200">
-                <div class="absolute left-0 top-0 bottom-0 w-8 rounded-l" style="background-color: ${
-                  s.spools.color_hex ?? '#e5e7eb'
-                };"></div>
+              <div class="rounded-lg shadow-sm p-4 bg-white border border-gray-200 flex items-start justify-between gap-3">
                 <div class="ml-6 flex flex-col gap-2">
                   <h2 class="text-lg font-semibold text-gray-800 mb-1">${s.spools.brand} ${s.spools.material}</h2>
                   <p class="text-sm text-gray-600">
@@ -289,8 +296,22 @@ app.get('/spools', async (c) => {
                     `
                         : '' // Don't show delete button if filaments are using it
                     }
-                    </form>
                   </div>
+                </div>
+                <!-- Color Indicator -->
+                <div class="relative">
+                  <div class="absolute right-0 top-0">
+                    <div class="relative w-20 h-20 rounded-lg" style="background-color: ${
+                      s.spools.color_hex ?? '#ffffff'
+                    };">
+                    <img
+                      src="/public/spool-overlay.png"
+                      alt="Filament Overlay"
+                      class="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                    />
+                  </div>
+                  </div>
+
                 </div>
               </div>
             `
