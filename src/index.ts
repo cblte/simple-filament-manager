@@ -29,7 +29,7 @@ interface Filament {
   print_temp_min: number | null;
   print_temp_max: number | null;
   price_eur: number | null;
-  created_at: string;
+  created_at: Date; // Timestamp of when the filament was created
 }
 
 // Datentyp für Anzeige nach Join
