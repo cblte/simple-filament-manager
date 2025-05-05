@@ -27,7 +27,7 @@ interface Filament {
   price_eur: number | null; // Price of the filament in Euros, can be null if unknown.
   weight_g: number; // Total weight (spool + material) in grams.
   spool_weight_g: number; // Empty spool weight in grams.
-  remaining_g?: number; // Calculated remaining material in grams (optional).
+  remaining_g: number; // Calculated remaining material in grams (optional).
   print_temp_min: number | null; // Minimum recommended printing temperature in Celsius, can be null if unknown.
   print_temp_max: number | null; // Maximum recommended printing temperature in Celsius, can be null if unknown.
   created_at: Date; // Timestamp indicating when the filament entry was created.
@@ -145,8 +145,8 @@ app.get('/', async (c) => {
                 <!-- filaments -->
                 ${filaments
                   .map(({ filament: f, profile: p }) => {
-                    const remaining = Math.max(f.weight_g - f.spool_weight_g, 0);
-                    const percentage = remaining > 0 ? Math.round((remaining / f.weight_g) * 100) : 0;
+                    const percentage =
+                      f.remaining_g > 0 ? Math.round((f.remaining_g / (f.weight_g - f.spool_weight_g)) * 100) : 0;
 
                     return `
                       <div class="rounded-lg shadow-sm p-4 bg-white border border-gray-200 flex items-start justify-between gap-3">
@@ -160,7 +160,7 @@ app.get('/', async (c) => {
                           ${(() => {
                             return `
                           <p class="text-sm text-gray-700">
-                            <strong>Remaining::</strong> ${remaining}g
+                            <strong>Remaining::</strong> ${f.remaining_g}g
                             <span class="text-xs text-gray-500">(${f.weight_g}g - ${f.spool_weight_g}g)</span>
                           </p>
                           <div class="">
@@ -481,11 +481,13 @@ function renderFilamentForm({
   title,
   filament,
   profileOptions,
+  isEdit = false,
 }: {
   action: string;
   title: string;
   filament?: Partial<Filament>;
   profileOptions: Profile[];
+  isEdit?: boolean;
 }): string {
   return `
     <html>
@@ -536,26 +538,23 @@ function renderFilamentForm({
             class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
         </div>
 
+
         <!-- Weight -->
         <div class="flex items-center gap-4">
           <label for="weight_g" class="text-sm font-medium text-gray-700 text-right w-32 mt-2">
-            ${filament?.weight_g == undefined ? 'Initial Weight (g)' : 'Total weight (g)'}
+            Total Weight (g)
           </label>
           <div class="flex flex-col flex-grow">
             <input
               name="weight_g"
               id="weight_g"
               type="number"
-              value="${filament?.weight_g ?? '1000'}"
+              value="${filament?.weight_g ?? '1200'}"
               required
               class="h-10 px-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500"
             />
             <span class="text-sm text-gray-500 mt-1">
-              ${
-                filament?.weight_g == undefined
-                  ? 'Only the weight of the filament without the spool aka. netto weight'
-                  : 'This is the total weight of the filament including the spool aka. brutto weight'
-              }
+              Weight of the entire spool with filament (brutto weight)
             </span>
           </div>
         </div>
@@ -568,6 +567,32 @@ function renderFilamentForm({
           }" required
             class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
         </div>
+
+        ${
+          isEdit
+            ? `
+          <!-- Remaining Weight (only visible in edit mode) -->
+          <div class="flex items-center gap-4">
+            <label for="remaining_g" class="text-sm font-medium text-gray-700 text-right w-32 mt-2">
+              Remaining Weight (g)
+            </label>
+            <div class="flex flex-col flex-grow">
+              <input
+                name="remaining_g"
+                id="remaining_g"
+                type="number"
+                value="${filament?.remaining_g ?? '0'}"
+                required
+                class="h-10 px-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500"
+              />
+              <span class="text-sm text-gray-500 mt-1">
+                Current weight of remaining filament on the spool
+              </span>
+            </div>
+          </div>`
+            : `<!-- Hidden remaining_g field for new filaments -->
+          <input type="hidden" name="remaining_g" id="remaining_g" value="0">`
+        }
 
         <!-- Temperature -->
         <div class="flex items-center gap-4">
@@ -609,9 +634,18 @@ app.get('/filaments/new', async (c) => {
 });
 
 // Parse form data for filament
-function parseFilamentFormData(formData: FormData): Partial<Filament> {
+// Parse form data for filament
+function parseFilamentFormData(formData: FormData, isEdit: boolean): Partial<Filament> {
   const weight_g = Number(formData.get('weight_g') as string) || 0;
   const spool_weight_g = Number(formData.get('spool_weight_g') as string) || 0;
+
+  let remaining_g = 0;
+  if (!isEdit) {
+    // If it's a new filament, calculate remaining_g based on weight_g and spool_weight_g
+    remaining_g = Math.max(weight_g - spool_weight_g, 0);
+  } else {
+    remaining_g = Number(formData.get('remaining_g') as string) || 0;
+  }
 
   return {
     name: formData.get('name') as string,
@@ -619,7 +653,7 @@ function parseFilamentFormData(formData: FormData): Partial<Filament> {
     color_hex: formData.get('color_hex') as string,
     weight_g: weight_g,
     spool_weight_g: spool_weight_g,
-    remaining_g: Math.max(weight_g - spool_weight_g, 0),
+    remaining_g: remaining_g,
     print_temp_min: Number(formData.get('print_temp_min') as string) || null,
     print_temp_max: Number(formData.get('print_temp_max') as string) || null,
     price_eur: parseFloat(formData.get('price_eur') as string) || null,
@@ -629,7 +663,7 @@ function parseFilamentFormData(formData: FormData): Partial<Filament> {
 // Route für das Hinzufügen eines Filaments
 app.post('/filaments/new', async (c) => {
   const formData = await c.req.formData();
-  const filamentData = parseFilamentFormData(formData);
+  const filamentData = parseFilamentFormData(formData, false);
 
   if (!filamentData.name || !filamentData.profile_id) {
     return c.text('Name and Spool are required.', 400);
@@ -642,7 +676,7 @@ app.post('/filaments/new', async (c) => {
       color_hex: filamentData.color_hex ?? '#000000',
       weight_g: filamentData.weight_g ?? 0,
       spool_weight_g: filamentData.spool_weight_g ?? 0,
-      remaining_g: filamentData.weight_g ?? 0,
+      remaining_g: filamentData.remaining_g ?? 0,
       print_temp_min: filamentData.print_temp_min ?? 0,
       print_temp_max: filamentData.print_temp_max ?? 0,
       price_eur: filamentData.price_eur ?? 0,
@@ -677,6 +711,7 @@ app.get('/filaments/:id/edit', async (c) => {
       title: `Edit Entry ${filament.name}`,
       filament,
       profileOptions,
+      isEdit: true,
     })
   );
 });
@@ -687,13 +722,13 @@ app.post('/filaments/:id/update', async (c) => {
   if (isNaN(id)) return c.text('Invalid ID', 400);
 
   const formData = await c.req.formData();
-  const filamentData = parseFilamentFormData(formData);
+  const filamentData = parseFilamentFormData(formData, true);
   if (!filamentData.name || !filamentData.profile_id) {
     return c.text('Name and Profile are required.', 400);
   }
 
   // calculate remaining weight
-  filamentData.remaining_g = Math.max((filamentData.weight_g ?? 0) - (filamentData.spool_weight_g ?? 0), 0);
+  const remaining_g = Math.max((filamentData.weight_g ?? 0) - (filamentData.spool_weight_g ?? 0), 0);
 
   try {
     await db
@@ -704,7 +739,7 @@ app.post('/filaments/:id/update', async (c) => {
         color_hex: filamentData.color_hex ?? '#000000',
         weight_g: filamentData.weight_g ?? 0,
         spool_weight_g: filamentData.spool_weight_g ?? 0,
-        remaining_g: filamentData.remaining_g,
+        remaining_g: filamentData.remaining_g ?? 0,
         print_temp_min: filamentData.print_temp_min ?? 0,
         print_temp_max: filamentData.print_temp_max ?? 0,
         price_eur: filamentData.price_eur ?? 0,
