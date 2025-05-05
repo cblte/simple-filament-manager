@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1746360652804,
-      "tag": "0000_lovely_fixer",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1746362682298,
-      "tag": "0001_flat_jane_foster",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1746431132864,
-      "tag": "0002_nostalgic_legion",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1746431552314,
-      "tag": "0003_lazy_maximus",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1746433760454,
-      "tag": "0004_complex_the_spike",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1746444881790,
-      "tag": "0005_spotty_quicksilver",
+      "when": 1746457802635,
+      "tag": "0000_sloppy_ser_duncan",
       "breakpoints": true
     }
   ]

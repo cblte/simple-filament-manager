@@ -1,5 +1,5 @@
 {
-  "id": "06466151-05cd-4007-ba83-9ae4781a9075",
+  "id": "630d6b9c-5030-4e64-bd78-3f547c7f9685",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -20,23 +20,120 @@
           "primaryKey": false,
           "notNull": true
         },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color_hex": {
+          "name": "color_hex",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_eur": {
+          "name": "price_eur",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weight_g": {
+          "name": "weight_g",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "spool_weight_g": {
+          "name": "spool_weight_g",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 200
+        },
+        "remaining_g": {
+          "name": "remaining_g",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "print_temp_min": {
+          "name": "print_temp_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "print_temp_max": {
+          "name": "print_temp_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "filaments_profile_id_profiles_id_fk": {
+          "name": "filaments_profile_id_profiles_id_fk",
+          "tableFrom": "filaments",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profiles": {
+      "name": "profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "vendor": {
+          "name": "vendor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "material": {
           "name": "material",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "color": {
-          "name": "color",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "weight": {
-          "name": "weight",
+        "density": {
+          "name": "density",
           "type": "real",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": 1.24
+        },
+        "diameter": {
+          "name": "diameter",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1.75
         }
       },
       "indexes": {},
