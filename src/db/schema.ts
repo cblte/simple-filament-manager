@@ -8,7 +8,7 @@ export const spools = pgTable('spools', {
   color_name: text('color_name').notNull(), // z. B. "Orange"
   color_hex: text('color_hex'), // z. B. "#ff6600"
   material_weight_g: integer('material_weight_g').notNull().default(1000), // z. B. 1000 g
-  spool_weight_g: integer('spool_weight_g'), // z. B. 200 g (Gwicht Spule ohne Filament)
+  spool_weight_g: integer('spool_weight_g').notNull().default(200), // z. B. 200 g (Gwicht Spule ohne Filament)
 });
 
 export const filaments = pgTable('filaments', {

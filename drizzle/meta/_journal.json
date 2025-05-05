@@ -36,6 +36,13 @@
       "when": 1746433760454,
       "tag": "0004_complex_the_spike",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1746444881790,
+      "tag": "0005_spotty_quicksilver",
+      "breakpoints": true
     }
   ]
 }
