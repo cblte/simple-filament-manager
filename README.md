@@ -66,22 +66,6 @@ This will start both the backend server and Tailwind in watch mode (see scripts 
 
 ---
 
-## 🔍 Project Structure
-
-```txt
-src/
-├── index.ts         # Entry point, Hono app and routes
-├── schema.ts        # Drizzle ORM schema
-├── styles/
-│   └── global.css   # Tailwind entrypoint
-public/
-└── output.css       # Compiled CSS
-docs/
-└── screenshot-dashboard.png  # Example screenshot (optional)
-```
-
----
-
 ## 📊 Database Schema
 
 The application uses a PostgreSQL database with the following schema:
