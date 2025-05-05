@@ -4,7 +4,7 @@
 
 A minimalistic, fast, and extensible web tool to manage your 3D printing filament inventory. Built with **Bun**, **Hono**, **Drizzle ORM**, **PostgreSQL**, and **Tailwind CSS v4**.
 
-![Dashboard Screenshot](docs/screenshot-dashboard.png)
+![Dashboard Screenshot](docs/screenshot.png)
 
 ---
 
@@ -15,7 +15,7 @@ A minimalistic, fast, and extensible web tool to manage your 3D printing filamen
 * **ORM**: [Drizzle ORM](https://orm.drizzle.team)
 * **Database**: PostgreSQL
 * **Styling**: [Tailwind CSS v4](https://tailwindcss.com)
-* **Auth (planned)**: [BetterAuth](https://github.com/hono-auth/better-auth)
+* **Auth (planned)**: JWT or [BetterAuth](https://github.com/hono-auth/better-auth)
 
 ---
 
@@ -220,7 +220,7 @@ services:
     environment:
       POSTGRES_USER: filament
       POSTGRES_PASSWORD: secret
-      POSTGRES_DB: filaments
+      POSTGRES_DB: simple-fm
     ports:
       - "5432:5432"
     volumes:
@@ -233,7 +233,9 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgres://filament:secret@db:5432/filaments
+      POSTGRES_URL: postgres://filament:secret@db:5432/simple-fm
+      NODE_ENV: development
+      PORT: 3000
     env_file:
       - .env
 
@@ -270,8 +272,8 @@ CMD ["bun", "run", "dist/index.js"]
 ### Example build & run
 
 ```bash
-docker build -t filament-manager .
-docker run -p 3000:3000 --env-file .env filament-manager
+docker build -t simple-filament-manager .
+docker run -p 3000:3000 --env-file .env simple-filament-manager
 ```
 
 Make sure your `.env` and any required data (e.g. volume-mounted PostgreSQL) are correctly configured.
@@ -280,12 +282,13 @@ Make sure your `.env` and any required data (e.g. volume-mounted PostgreSQL) are
 
 ## 📆 Planned / TODO
 
-* [ ] Authentication with BetterAuth
-* [ ] Create/edit spools via frontend
+* [ ] Authentication with BetterAuth or via JWT stored in cookies
 * [ ] Project-based consumption tracking
 * [ ] CSV/JSON export & import
 * [ ] Dark mode
 * [ ] Screenshots for filament detail view & spool overview
+* [x] Create/edit filament spools via frontend
+* [x] Create/edit profiles via frontend
 
 ---
 
@@ -295,7 +298,9 @@ You can use this `.env.example` as a template:
 
 ```env
 # PostgreSQL connection string
-DATABASE_URL=postgres://filament:secret@localhost:5432/filaments
+DATABASE_URL=postgres://filament:secret@localhost:5432/simple-fm
+NODE_ENV=development
+PORT=3000
 
 # You can override this in docker-compose as needed
 ```
