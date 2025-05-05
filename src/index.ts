@@ -96,12 +96,18 @@ app.get('/', async (c) => {
         <link href="/public/output.css" rel="stylesheet">
       </head>
       <body class="p-6 font-sans bg-gray-50 text-gray-800">
-        <h1 class="text-2xl font-bold mb-4">Filament Manager</h1>
-        <p class="mb-4">Verwalte deine Filamente für den 3D-Druck. Du kannst deine Filamente hinzufügen, bearbeiten und löschen.</p>
-        <p class="mb-6">
-          <a href="/filaments/new" class="inline-block bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded shadow">➕ Neues Filament</a>
-        </p>
 
+        <h1 class="text-2xl font-bold mb-4 inline-block bg-sky-200 text-teal-800 px-4 py-2 rounded-lg">Filament Manager</h1>
+        <p class="mb-4">Verwalte deine Filamente für den 3D-Druck. Du kannst deine Filamente hinzufügen, bearbeiten und löschen.</p>
+        <p class="mb-4">
+          Hier geht es zur <a href="/spools" class="text-blue-600 hover:underline">Spulenverwaltung</a>
+        </p>
+        <p class="mb-6 flex flex-wrap gap-3">
+        <a href="/filaments/new"
+            class="inline-block bg-sky-100 hover:bg-sky-200 text-sky-800 px-4 py-2 rounded-lg shadow-sm transition">
+            ➕ Neues Filament
+          </a>
+        </p>
         <form method="GET" class="mb-6 flex flex-wrap gap-2 items-center">
           ${spoolOptions
             .map((s) => {
@@ -208,6 +214,208 @@ app.get('/', async (c) => {
       </body>
     </html>
   `);
+});
+
+// Route für die Spulenübersicht
+app.get('/spools', async (c) => {
+  const spoolsList = await db.select().from(spools).orderBy(spools.brand);
+  return c.html(`
+    <html>
+      <head>
+        <title>Spulenübersicht</title>
+        <link href="/public/output.css" rel="stylesheet">
+      </head>
+      <body class="p-6 font-sans bg-gray-50 text-gray-800">
+        <h1 class="text-2xl font-bold mb-4 inline-block bg-teal-100 text-teal-800 px-4 py-2 rounded-lg">Spulenübersicht</h1>
+        <p class="mb-4">
+          Hier kannst du eine neue Spule anlegen oder eine bestehende Spule bearbeiten.
+        </p>
+        <p class="mb-4">
+          Hier geht es zur <a href="/" class="text-blue-600 hover:underline">Filamentübersicht</a>
+        </p>
+
+        <a href="/spools/new" class="inline-block bg-teal-100 hover:bg-teal-200 text-teal-800 px-4 py-2 rounded-lg shadow-sm transition mb-6">➕ Neue Spule</a>
+        ${
+          spoolsList.length === 0
+            ? '<p class="text-center text-gray-500">Keine Spulen vorhanden.</p>'
+            : `
+          <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
+            ${spoolsList
+              .map(
+                (spool) => `
+              <div class="relative rounded-lg shadow-sm p-4 bg-white border border-gray-200">
+                <div class="absolute left-0 top-0 bottom-0 w-8 rounded-l" style="background-color: ${
+                  spool.color_hex ?? '#e5e7eb'
+                };"></div>
+                <div class="ml-6 flex flex-col gap-2">
+                  <h2 class="text-lg font-semibold text-gray-800 mb-1">${spool.brand} ${spool.material}</h2>
+                  <p class="text-sm text-gray-600">
+                    <strong>Farbe:</strong> ${spool.color_name}
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    <strong>Materialgewicht:</strong> ${spool.material_weight_g}g
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    <strong>Leergewicht:</strong> ${spool.spool_weight_g ?? '-'}g
+                  </p>
+                  <div class="mt-4 flex gap-2">
+                    <form action="/spools/${spool.id}/edit" method="get">
+                      <button class="inline-flex items-center gap-1 bg-sky-100 hover:bg-sky-200 text-sky-800 text-sm font-medium px-3 py-1 rounded shadow-sm transition">
+                        ✏️ <span>Bearbeiten</span>
+                      </button>
+                    </form>
+                    <!-- Optional: Delete Button (requires a POST route /spools/:id/delete) -->
+                    <!--
+                    <form action="/spools/${
+                      spool.id
+                    }/delete" method="post" onsubmit="return confirm('Wirklich löschen? Alle zugehörigen Filamente werden ebenfalls gelöscht!')">
+                      <button class="inline-flex items-center gap-1 bg-red-100 hover:bg-red-200 text-red-800 text-sm font-medium px-3 py-1 rounded shadow-sm transition">
+                        🗑️ <span>Löschen</span>
+                      </button>
+                    </form>
+                    -->
+                  </div>
+                </div>
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+        `
+        }
+      </body>
+    </html>
+  `);
+});
+
+// Funktion zum Rendern des Formulars für Spulen
+function renderSpoolForm({ action, title, spool }: { action: string; title: string; spool?: Partial<Spool> }): string {
+  return `
+  <html>
+    <head>
+      <title>${title} – Filament Manager</title>
+      <link href="/public/output.css" rel="stylesheet">
+    </head>
+    <body class="p-8 font-sans bg-gray-50 text-gray-800">
+      <h1 class="text-2xl font-bold mb-6">${title}</h1>
+      <form action="${action}" method="POST" class="grid gap-6 max-w-2xl">
+        <!-- Brand & Material -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="brand" class="block text-sm font-medium text-gray-700 mb-1">Marke</label>
+            <input name="brand" id="brand" value="${spool?.brand ?? ''}" required
+              class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
+          </div>
+          <div>
+            <label for="material" class="block text-sm font-medium text-gray-700 mb-1">Material</label>
+            <input name="material" id="material" value="${spool?.material ?? ''}" required
+              class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
+          </div>
+        </div>
+
+        <!-- Color Name & Hex -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="color_name" class="block text-sm font-medium text-gray-700 mb-1">Farbname</label>
+            <input name="color_name" id="color_name" value="${spool?.color_name ?? ''}" required
+              class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
+          </div>
+          <div>
+            <label for="color_hex" class="block text-sm font-medium text-gray-700 mb-1">Farbcode (Hex)</label>
+            <input type="color" name="color_hex" id="color_hex" value="${spool?.color_hex ?? '#ff6600'}"
+              class="w-full h-10 p-1 border border-gray-300 rounded bg-white shadow-sm cursor-pointer focus:ring-sky-500 focus:border-sky-500">
+          </div>
+        </div>
+
+        <!-- Material Weight & Spool Weight -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="material_weight_g" class="block text-sm font-medium text-gray-700 mb-1">Materialgewicht (g)</label>
+            <input name="material_weight_g" id="material_weight_g" type="number" value="${
+              spool?.material_weight_g ?? 1000
+            }" required
+              class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
+          </div>
+          <div>
+            <label for="spool_weight_g" class="block text-sm font-medium text-gray-700 mb-1">Leergewicht Spule (g)</label>
+            <input name="spool_weight_g" id="spool_weight_g" type="number" value="${spool?.spool_weight_g ?? ''}"
+              class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-4 pt-4">
+          <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded">
+            ${spool ? 'Speichern' : '➕ Spule hinzufügen'}
+          </button>
+          <a href="/" class="text-gray-600 underline self-center">Abbrechen</a>
+        </div>
+      </form>
+    </body>
+  </html>
+  `;
+}
+
+// Route für das Erstellen einer neuen Spule
+app.get('/spools/new', async (c) => {
+  return c.html(
+    renderSpoolForm({
+      action: '/spools/new',
+      title: 'Neue Spule anlegen',
+    })
+  );
+});
+
+// Funktion zum Parsen der Formulardaten für Spulen
+function parseSpoolFormData(formData: FormData): Partial<Spool> {
+  return {
+    brand: formData.get('brand') as string,
+    material: formData.get('material') as string,
+    color_name: formData.get('color_name') as string,
+    color_hex: formData.get('color_hex') as string,
+    material_weight_g: Number(formData.get('material_weight_g') as string) || 0,
+    spool_weight_g: Number(formData.get('spool_weight_g') as string) || 0,
+  };
+}
+
+// Route für das Hinzufügen einer neuen Spule
+
+app.post('/spools/new', async (c) => {
+  const formData = await c.req.formData();
+  const spoolData = parseSpoolFormData(formData);
+
+  return c.redirect('/spools');
+});
+// Route für das Bearbeiten einer Spule
+app.get('/spools/:id/edit', async (c) => {
+  const id = Number(c.req.param('id'));
+  if (isNaN(id)) return c.text('Ungültige ID', 400);
+
+  const result = await db.select().from(spools).where(eq(spools.id, id));
+  if (!result.length) return c.text('Spule nicht gefunden', 404);
+
+  const spool = result[0];
+
+  return c.html(
+    renderSpoolForm({
+      action: `/spools/${spool.id}/update`,
+      title: `Eintrag ${spool.brand} ${spool.material} bearbeiten`,
+      spool,
+    })
+  );
+});
+
+// Route für das Aktualisieren einer Spule
+app.post('/spools/:id/update', async (c) => {
+  const id = Number(c.req.param('id'));
+  if (isNaN(id)) return c.text('Ungültige ID', 400);
+
+  const formData = await c.req.formData();
+  const spoolData = parseSpoolFormData(formData);
+
+  await db.update(spools).set(spoolData).where(eq(spools.id, id));
+
+  return c.redirect('/spools');
 });
 
 // Funktion zum Rendern des Formulars für Filamente
