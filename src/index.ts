@@ -146,7 +146,7 @@ app.get('/', async (c) => {
                 ${filaments
                   .map(({ filament: f, profile: p }) => {
                     const remaining = Math.max(f.weight_g - f.spool_weight_g, 0);
-                    const percentage = f.weight_g > 0 ? Math.round((remaining / f.weight_g) * 100) : 0;
+                    const percentage = remaining > 0 ? Math.round((remaining / f.weight_g) * 100) : 0;
 
                     return `
                       <div class="rounded-lg shadow-sm p-4 bg-white border border-gray-200 flex items-start justify-between gap-3">
@@ -160,7 +160,7 @@ app.get('/', async (c) => {
                           ${(() => {
                             return `
                           <p class="text-sm text-gray-700">
-                            <strong>Weight:</strong> ${remaining}g
+                            <strong>Remaining::</strong> ${remaining}g
                             <span class="text-xs text-gray-500">(${f.weight_g}g - ${f.spool_weight_g}g)</span>
                           </p>
                           <div class="">
@@ -536,12 +536,31 @@ function renderFilamentForm({
             class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
         </div>
 
+        <!-- Weight -->
         <div class="flex items-center gap-4">
-          <label for="weight_g" class="text-sm font-medium text-gray-700 text-right w-32">Total Weight (g)</label>
-          <input name="weight_g" id="weight_g" type="number" value="${filament?.weight_g ?? '1000'}" required
-            class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
+          <label for="weight_g" class="text-sm font-medium text-gray-700 text-right w-32 mt-2">
+            ${filament?.weight_g == undefined ? 'Initial Weight (g)' : 'Total weight (g)'}
+          </label>
+          <div class="flex flex-col flex-grow">
+            <input
+              name="weight_g"
+              id="weight_g"
+              type="number"
+              value="${filament?.weight_g ?? '1000'}"
+              required
+              class="h-10 px-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500"
+            />
+            <span class="text-sm text-gray-500 mt-1">
+              ${
+                filament?.weight_g == undefined
+                  ? 'Only the weight of the filament without the spool aka. netto weight'
+                  : 'This is the total weight of the filament including the spool aka. brutto weight'
+              }
+            </span>
+          </div>
         </div>
 
+        <!-- Spool Weight -->
         <div class="flex items-center gap-4">
           <label for="spool_weight_g" class="text-sm font-medium text-gray-700 text-right w-32">Spool Weight (g)</label>
           <input name="spool_weight_g" id="spool_weight_g" type="number" value="${
@@ -557,6 +576,7 @@ function renderFilamentForm({
             class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
         </div>
 
+        <!-- Max Temperature -->
         <div class="flex items-center gap-4">
           <label for="print_temp_max" class="text-sm font-medium text-gray-700 text-right w-32">Max Temp (°C)</label>
           <input name="print_temp_max" id="print_temp_max" type="number" value="${filament?.print_temp_max ?? ''}"
@@ -622,7 +642,7 @@ app.post('/filaments/new', async (c) => {
       color_hex: filamentData.color_hex ?? '#000000',
       weight_g: filamentData.weight_g ?? 0,
       spool_weight_g: filamentData.spool_weight_g ?? 0,
-      remaining_g: filamentData.remaining_g ?? 0,
+      remaining_g: filamentData.weight_g ?? 0,
       print_temp_min: filamentData.print_temp_min ?? 0,
       print_temp_max: filamentData.print_temp_max ?? 0,
       price_eur: filamentData.price_eur ?? 0,
