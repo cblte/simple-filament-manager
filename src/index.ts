@@ -2,8 +2,9 @@ import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { logger } from 'hono/logger';
 import { filaments, spools } from './db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, count } from 'drizzle-orm';
 import { serveStatic } from 'hono/bun';
+import { color } from 'bun';
 
 // Importiere die Datenbankverbindung
 const db = drizzle(process.env.POSTGRES_URL!);
@@ -218,7 +219,16 @@ app.get('/', async (c) => {
 
 // Route für die Spulenübersicht
 app.get('/spools', async (c) => {
-  const spoolsList = await db.select().from(spools).orderBy(spools.brand);
+  const spoolsWithCount = await db
+    .select({
+      spools: spools,
+      filamentCount: count(filaments.id),
+    })
+    .from(spools)
+    .leftJoin(filaments, eq(spools.id, filaments.spool_id))
+    .groupBy(spools.id)
+    .orderBy(spools.brand);
+
   return c.html(`
     <html>
       <head>
@@ -236,44 +246,50 @@ app.get('/spools', async (c) => {
 
         <a href="/spools/new" class="inline-block bg-teal-100 hover:bg-teal-200 text-teal-800 px-4 py-2 rounded-lg shadow-sm transition mb-6">➕ Neue Spule</a>
         ${
-          spoolsList.length === 0
+          spoolsWithCount.length === 0
             ? '<p class="text-center text-gray-500">Keine Spulen vorhanden.</p>'
             : `
           <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
-            ${spoolsList
+            ${spoolsWithCount
               .map(
-                (spool) => `
+                (s) => `
               <div class="relative rounded-lg shadow-sm p-4 bg-white border border-gray-200">
                 <div class="absolute left-0 top-0 bottom-0 w-8 rounded-l" style="background-color: ${
-                  spool.color_hex ?? '#e5e7eb'
+                  s.spools.color_hex ?? '#e5e7eb'
                 };"></div>
                 <div class="ml-6 flex flex-col gap-2">
-                  <h2 class="text-lg font-semibold text-gray-800 mb-1">${spool.brand} ${spool.material}</h2>
+                  <h2 class="text-lg font-semibold text-gray-800 mb-1">${s.spools.brand} ${s.spools.material}</h2>
                   <p class="text-sm text-gray-600">
-                    <strong>Farbe:</strong> ${spool.color_name}
+                    <strong>Farbe:</strong> ${s.spools.color_name}
                   </p>
                   <p class="text-sm text-gray-600">
-                    <strong>Materialgewicht:</strong> ${spool.material_weight_g}g
+                    <strong>Materialgewicht:</strong> ${s.spools.material_weight_g}g
                   </p>
                   <p class="text-sm text-gray-600">
-                    <strong>Leergewicht:</strong> ${spool.spool_weight_g ?? '-'}g
+                    <strong>Leergewicht:</strong> ${s.spools.spool_weight_g ?? '-'}g
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    <strong>Verwendet von:</strong> ${s.filamentCount} Filamenten
                   </p>
                   <div class="mt-4 flex gap-2">
-                    <form action="/spools/${spool.id}/edit" method="get">
+                    <form action="/spools/${s.spools.id}/edit" method="get">
                       <button class="inline-flex items-center gap-1 bg-sky-100 hover:bg-sky-200 text-sky-800 text-sm font-medium px-3 py-1 rounded shadow-sm transition">
                         ✏️ <span>Bearbeiten</span>
                       </button>
                     </form>
-                    <!-- Optional: Delete Button (requires a POST route /spools/:id/delete) -->
-                    <!--
-                    <form action="/spools/${
-                      spool.id
-                    }/delete" method="post" onsubmit="return confirm('Wirklich löschen? Alle zugehörigen Filamente werden ebenfalls gelöscht!')">
+                    ${
+                      // Only show delete button if no filaments are using this spool
+                      s.filamentCount === 0
+                        ? `
+                    <form action="/spools/${s.spools.id}/delete" method="post" onsubmit="return confirm('Wirklich löschen? Diese Spule wird von keinen Filamenten verwendet.')">
                       <button class="inline-flex items-center gap-1 bg-red-100 hover:bg-red-200 text-red-800 text-sm font-medium px-3 py-1 rounded shadow-sm transition">
                         🗑️ <span>Löschen</span>
                       </button>
                     </form>
-                    -->
+                    `
+                        : '' // Don't show delete button if filaments are using it
+                    }
+                    </form>
                   </div>
                 </div>
               </div>
@@ -322,7 +338,7 @@ function renderSpoolForm({ action, title, spool }: { action: string; title: stri
           </div>
           <div>
             <label for="color_hex" class="block text-sm font-medium text-gray-700 mb-1">Farbcode (Hex)</label>
-            <input type="color" name="color_hex" id="color_hex" value="${spool?.color_hex ?? '#ff6600'}"
+            <input type="color" name="color_hex" id="color_hex" value="${spool?.color_hex ?? '#000000'}"
               class="w-full h-10 p-1 border border-gray-300 rounded bg-white shadow-sm cursor-pointer focus:ring-sky-500 focus:border-sky-500">
           </div>
         </div>
@@ -416,7 +432,7 @@ app.get('/spools/:id/edit', async (c) => {
     renderSpoolForm({
       action: `/spools/${spool.id}/update`,
       title: `Eintrag ${spool.brand} ${spool.material} bearbeiten`,
-      spool,
+      spool: { ...spool, color_hex: spool.color_hex ?? undefined, spool_weight_g: spool.spool_weight_g ?? undefined },
     })
   );
 });
