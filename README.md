@@ -282,6 +282,7 @@ Make sure your `.env` and any required data (e.g. volume-mounted PostgreSQL) are
 
 ## 📆 Planned / TODO
 
+* [ ] Test the docker stuff
 * [ ] Authentication with BetterAuth or via JWT stored in cookies
 * [ ] Project-based consumption tracking
 * [ ] CSV/JSON export & import
