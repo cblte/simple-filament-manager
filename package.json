@@ -5,7 +5,7 @@
     "dev": "bun run --hot src/index.ts",
     "css": "bunx @tailwindcss/cli -i ./src/styles/global.css -o ./public/output.css --minify",
     "migrate": "bunx drizzle-kit migrate",
-    "build": "bun run css && bunx drizzle-kit generate && bun build src/index.ts --target=bun --outdir=dist && cp -r public dist/public",
+    "build": "bun run css && bunx drizzle-kit generate && bun build src/index.ts --target=bun --outdir=dist && cp -r public dist/public && cp .env.example dist/.env",
     "start": "bun run migrate && bun run dist/index.js"
   },
   "dependencies": {
