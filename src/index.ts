@@ -6,48 +6,48 @@ import { desc, eq, count } from 'drizzle-orm';
 import { serveStatic } from 'hono/bun';
 import { color } from 'bun';
 
-// Importiere die Datenbankverbindung
+// Read database connection string from environment variable
 const db = drizzle(process.env.POSTGRES_URL!);
 
-// Datentyp für Materialspulen
+// Interface definition for a spool, representing the properties of a filament spool
 interface Spool {
   id: number;
   brand: string;
   material: string;
   color_name: string;
-  color_hex?: string; // z. B. "#ff6600"
-  material_weight_g: number;
-  spool_weight_g?: number;
+  color_hex?: string; // Optional hex color code, e.g., "#ff6600"
+  material_weight_g: number; // Weight of the material on the spool in grams
+  spool_weight_g?: number; // Optional weight of the empty spool in grams
 }
 
-// Datentyp für aktuellen Filamentbestand
+// Data type for the current filament inventory
 interface Filament {
-  id: number;
-  name: string;
-  spool_id: number;
-  weight_g: number; // Gesamtgewicht (Spule + Material), wird gewogen
-  print_temp_min: number | null;
-  print_temp_max: number | null;
-  price_eur: number | null;
+  id: number; // Unique identifier for the filament
+  name: string; // Name or description of the filament
+  spool_id: number; // ID of the associated spool
+  weight_g: number; // Total weight (spool + material), measured in grams
+  print_temp_min: number | null; // Minimum printing temperature in °C, nullable
+  print_temp_max: number | null; // Maximum printing temperature in °C, nullable
+  price_eur: number | null; // Price of the filament in euros, nullable
   created_at: Date; // Timestamp of when the filament was created
 }
 
-// Datentyp für Anzeige nach Join
+// Interface representing a filament along with its associated spool
 interface FilamentWithSpool {
-  filament: Filament;
-  spool: Spool;
+  filament: Filament; // The filament details
+  spool: Spool; // The spool details associated with the filament
 }
 
-// Erstelle die Hono-App
+// Create a new Hono application instance
 const app = new Hono();
 
-// Logging Middleware hinzufügen
+// Middleware for logging requests
 app.use('*', logger());
 
-// Middleware für statische Dateien hinzufügen
+// Middleware for static files
 app.use('/public/*', serveStatic({ root: './' }));
 
-// Filamentliste (mit optionaler Filterung nach spool_id)
+// Fetch list of filaments (optionally filtered by spool_id) also to the code
 async function fetchFilaments(spoolId?: number): Promise<FilamentWithSpool[]> {
   try {
     let query = db
@@ -60,7 +60,7 @@ async function fetchFilaments(spoolId?: number): Promise<FilamentWithSpool[]> {
       .orderBy(desc(filaments.created_at));
 
     if (spoolId) {
-      query = query.where(eq(filaments.spool_id, spoolId));
+      query.where(eq(filaments.spool_id, spoolId));
     }
 
     const result = await query;
@@ -71,7 +71,7 @@ async function fetchFilaments(spoolId?: number): Promise<FilamentWithSpool[]> {
   }
 }
 
-// Spulenliste (für Filterbuttons)
+// Spool options for the filter
 async function fetchSpools(): Promise<Spool[]> {
   try {
     const result = await db.select().from(spools).orderBy(spools.brand);
@@ -99,14 +99,14 @@ app.get('/', async (c) => {
       <body class="p-6 font-sans bg-gray-50 text-gray-800">
 
         <h1 class="text-2xl font-bold mb-4 inline-block bg-sky-200 text-teal-800 px-4 py-2 rounded-lg">Filament Manager</h1>
-        <p class="mb-4">Verwalte deine Filamente für den 3D-Druck. Du kannst deine Filamente hinzufügen, bearbeiten und löschen.</p>
+        <p class="mb-4">Manage your filaments for 3D printing. You can add, edit, and delete your filaments.</p>
         <p class="mb-4">
-          Hier geht es zur <a href="/spools" class="text-blue-600 hover:underline">Spulenverwaltung</a>
+          Go to <a href="/spools" class="text-blue-600 hover:underline">Spool Management</a>
         </p>
         <p class="mb-6 flex flex-wrap gap-3">
         <a href="/filaments/new"
             class="inline-block bg-sky-100 hover:bg-sky-200 text-sky-800 px-4 py-2 rounded-lg shadow-sm transition">
-            ➕ Neues Filament
+            ➕ New Filament
           </a>
         </p>
         <form method="GET" class="mb-6 flex flex-wrap gap-2 items-center">
@@ -129,14 +129,14 @@ app.get('/', async (c) => {
             .join('')}
           ${
             spoolParam
-              ? `<a href="/" class="ml-2 underline text-sm text-gray-500 hover:text-gray-700">Filter zurücksetzen</a>`
+              ? `<a href="/" class="ml-2 underline text-sm text-gray-500 hover:text-gray-700">Reset Filter</a>`
               : ''
           }
         </form>
 
         ${
           filaments.length === 0
-            ? `<p class="text-center text-gray-500">Keine Einträge vorhanden.</p>`
+            ? `<p class="text-center text-gray-500">No entries available.</p>`
             : `
               <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
                 ${filaments
@@ -156,13 +156,13 @@ app.get('/', async (c) => {
                         <div class="ml-6 flex flex-col gap-2">
                           <h2 class="text-lg font-semibold text-gray-800 mb-1">${f.name}</h2>
                           <p class="text-sm text-gray-600">
-                            <strong>Typ:</strong> ${s.brand} ${s.material} – ${s.color_name}
+                            <strong>Type:</strong> ${s.brand} ${s.material} – ${s.color_name}
                           </p>
 
                           ${(() => {
                             return `
                                 <p class="text-sm text-gray-700">
-                                  <strong>Gewicht:</strong> ${remaining}g
+                                  <strong>Weight:</strong> ${remaining}g
                                   <span class="text-xs text-gray-500">(${f.weight_g}g - ${s.spool_weight_g}g)</span>
                                 </p>
                                 <div class="">
@@ -170,14 +170,14 @@ app.get('/', async (c) => {
                                     <div class="h-full rounded-full transition-all duration-300"
                                       style="width: ${percentage}%; background-color: ${
                               percentage > 60
-                                ? '#10b981' // grün
+                                ? '#10b981' // green
                                 : percentage > 30
-                                ? '#f59e0b' // gelb
-                                : '#ef4444' // rot
+                                ? '#f59e0b' // yellow
+                                : '#ef4444' // red
                             };">
                                     </div>
                                   </div>
-                                  <p class="text-xs text-gray-500 mt-1">${percentage}% verfügbar</p>
+                                  <p class="text-xs text-gray-500 mt-1">${percentage}% available</p>
                                 </div>
                               `;
                           })()}
@@ -187,20 +187,20 @@ app.get('/', async (c) => {
                           </p>
 
                           <p class="text-sm text-gray-700">
-                            <strong>Preis:</strong> ${f.price_eur ? f.price_eur.toFixed(2) : '-'} €
+                            <strong>Price:</strong> ${f.price_eur ? f.price_eur.toFixed(2) : '-'} €
                           </p>
 
                           <div class="mt-4 flex gap-2">
                             <form action="/filaments/${f.id}/edit" method="get">
                               <button class="inline-flex items-center gap-1 bg-sky-100 hover:bg-sky-200 text-sky-800 text-sm font-medium px-3 py-1 rounded shadow-sm transition">
-                                ✏️ <span>Bearbeiten</span>
+                                ✏️ <span>Edit</span>
                               </button>
                             </form>
                             <form action="/filaments/${
                               f.id
-                            }/delete" method="post" onsubmit="return confirm('Wirklich löschen?')">
+                            }/delete" method="post" onsubmit="return confirm('Really delete?')">
                               <button class="inline-flex items-center gap-1 bg-red-100 hover:bg-red-200 text-red-800 text-sm font-medium px-3 py-1 rounded shadow-sm transition">
-                                🗑️ <span>Löschen</span>
+                                🗑️ <span>Delete</span>
                               </button>
                             </form>
                           </div>
@@ -232,22 +232,22 @@ app.get('/spools', async (c) => {
   return c.html(`
     <html>
       <head>
-        <title>Spulenübersicht</title>
+        <title>Spool Overview</title>
         <link href="/public/output.css" rel="stylesheet">
       </head>
       <body class="p-6 font-sans bg-gray-50 text-gray-800">
-        <h1 class="text-2xl font-bold mb-4 inline-block bg-teal-100 text-teal-800 px-4 py-2 rounded-lg">Spulenübersicht</h1>
+        <h1 class="text-2xl font-bold mb-4 inline-block bg-teal-100 text-teal-800 px-4 py-2 rounded-lg">Spool Overview</h1>
         <p class="mb-4">
-          Hier kannst du eine neue Spule anlegen oder eine bestehende Spule bearbeiten.
+          Here you can create a new spool or edit an existing one.
         </p>
         <p class="mb-4">
-          Hier geht es zur <a href="/" class="text-blue-600 hover:underline">Filamentübersicht</a>
+          Go to <a href="/" class="text-blue-600 hover:underline">Filament Overview</a>
         </p>
 
-        <a href="/spools/new" class="inline-block bg-teal-100 hover:bg-teal-200 text-teal-800 px-4 py-2 rounded-lg shadow-sm transition mb-6">➕ Neue Spule</a>
+        <a href="/spools/new" class="inline-block bg-teal-100 hover:bg-teal-200 text-teal-800 px-4 py-2 rounded-lg shadow-sm transition mb-6">➕ New Spool</a>
         ${
           spoolsWithCount.length === 0
-            ? '<p class="text-center text-gray-500">Keine Spulen vorhanden.</p>'
+            ? '<p class="text-center text-gray-500">No spools available.</p>'
             : `
           <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
             ${spoolsWithCount
@@ -260,30 +260,30 @@ app.get('/spools', async (c) => {
                 <div class="ml-6 flex flex-col gap-2">
                   <h2 class="text-lg font-semibold text-gray-800 mb-1">${s.spools.brand} ${s.spools.material}</h2>
                   <p class="text-sm text-gray-600">
-                    <strong>Farbe:</strong> ${s.spools.color_name}
+                    <strong>Color:</strong> ${s.spools.color_name}
                   </p>
                   <p class="text-sm text-gray-600">
-                    <strong>Materialgewicht:</strong> ${s.spools.material_weight_g}g
+                    <strong>Material Weight:</strong> ${s.spools.material_weight_g}g
                   </p>
                   <p class="text-sm text-gray-600">
-                    <strong>Leergewicht:</strong> ${s.spools.spool_weight_g ?? '-'}g
+                    <strong>Empty Weight:</strong> ${s.spools.spool_weight_g ?? '-'}g
                   </p>
                   <p class="text-sm text-gray-500">
-                    <strong>Verwendet von:</strong> ${s.filamentCount} Filamenten
+                    <strong>Used by:</strong> ${s.filamentCount} Filaments
                   </p>
                   <div class="mt-4 flex gap-2">
                     <form action="/spools/${s.spools.id}/edit" method="get">
                       <button class="inline-flex items-center gap-1 bg-sky-100 hover:bg-sky-200 text-sky-800 text-sm font-medium px-3 py-1 rounded shadow-sm transition">
-                        ✏️ <span>Bearbeiten</span>
+                        ✏️ <span>Edit</span>
                       </button>
                     </form>
                     ${
                       // Only show delete button if no filaments are using this spool
                       s.filamentCount === 0
                         ? `
-                    <form action="/spools/${s.spools.id}/delete" method="post" onsubmit="return confirm('Wirklich löschen? Diese Spule wird von keinen Filamenten verwendet.')">
+                    <form action="/spools/${s.spools.id}/delete" method="post" onsubmit="return confirm('Really delete? This spool is not used by any filaments.')">
                       <button class="inline-flex items-center gap-1 bg-red-100 hover:bg-red-200 text-red-800 text-sm font-medium px-3 py-1 rounded shadow-sm transition">
-                        🗑️ <span>Löschen</span>
+                        🗑️ <span>Delete</span>
                       </button>
                     </form>
                     `
@@ -318,7 +318,7 @@ function renderSpoolForm({ action, title, spool }: { action: string; title: stri
         <!-- Brand & Material -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label for="brand" class="block text-sm font-medium text-gray-700 mb-1">Marke</label>
+            <label for="brand" class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
             <input name="brand" id="brand" value="${spool?.brand ?? ''}" required
               class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
           </div>
@@ -332,12 +332,12 @@ function renderSpoolForm({ action, title, spool }: { action: string; title: stri
         <!-- Color Name & Hex -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label for="color_name" class="block text-sm font-medium text-gray-700 mb-1">Farbname</label>
+            <label for="color_name" class="block text-sm font-medium text-gray-700 mb-1">Color Name</label>
             <input name="color_name" id="color_name" value="${spool?.color_name ?? ''}" required
               class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
           </div>
           <div>
-            <label for="color_hex" class="block text-sm font-medium text-gray-700 mb-1">Farbcode (Hex)</label>
+            <label for="color_hex" class="block text-sm font-medium text-gray-700 mb-1">Color Code (Hex)</label>
             <input type="color" name="color_hex" id="color_hex" value="${spool?.color_hex ?? '#000000'}"
               class="w-full h-10 p-1 border border-gray-300 rounded bg-white shadow-sm cursor-pointer focus:ring-sky-500 focus:border-sky-500">
           </div>
@@ -346,14 +346,14 @@ function renderSpoolForm({ action, title, spool }: { action: string; title: stri
         <!-- Material Weight & Spool Weight -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label for="material_weight_g" class="block text-sm font-medium text-gray-700 mb-1">Materialgewicht (g)</label>
+            <label for="material_weight_g" class="block text-sm font-medium text-gray-700 mb-1">Material Weight (g)</label>
             <input name="material_weight_g" id="material_weight_g" type="number" value="${
               spool?.material_weight_g ?? 1000
             }" required
               class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
           </div>
           <div>
-            <label for="spool_weight_g" class="block text-sm font-medium text-gray-700 mb-1">Leergewicht Spule (g)</label>
+            <label for="spool_weight_g" class="block text-sm font-medium text-gray-700 mb-1">Empty Spool Weight (g)</label>
             <input name="spool_weight_g" id="spool_weight_g" type="number" value="${spool?.spool_weight_g ?? ''}"
               class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
           </div>
@@ -362,9 +362,9 @@ function renderSpoolForm({ action, title, spool }: { action: string; title: stri
         <!-- Buttons -->
         <div class="flex gap-4 pt-4">
           <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded">
-            ${spool ? 'Speichern' : '➕ Spule hinzufügen'}
+            ${spool ? 'Save' : '➕ Add Spool'}
           </button>
-          <a href="/" class="text-gray-600 underline self-center">Abbrechen</a>
+          <a href="/spools" class="text-gray-600 underline self-center">Cancel</a>
         </div>
       </form>
     </body>
@@ -377,7 +377,7 @@ app.get('/spools/new', async (c) => {
   return c.html(
     renderSpoolForm({
       action: '/spools/new',
-      title: 'Neue Spule anlegen',
+      title: 'Create New Spool',
     })
   );
 });
@@ -400,7 +400,7 @@ app.post('/spools/new', async (c) => {
   const formData = await c.req.formData();
   const spoolData = parseSpoolFormData(formData);
   if (!spoolData.brand || !spoolData.material || !spoolData.color_name) {
-    return c.text('Marke, Material und Farbname sind erforderlich.', 400);
+    return c.text('Brand, Material, and Color Name are required.', 400);
   }
   try {
     await db.insert(spools).values({
@@ -414,24 +414,24 @@ app.post('/spools/new', async (c) => {
 
     return c.redirect('/spools');
   } catch (error: any) {
-    console.error('Fehler beim Speichern:', error.message);
-    return c.text('Fehler beim Speichern: ' + error.message, 500);
+    console.error('Error saving:', error.message);
+    return c.text('Error saving: ' + error.message, 500);
   }
 });
 // Route für das Bearbeiten einer Spule
 app.get('/spools/:id/edit', async (c) => {
   const id = Number(c.req.param('id'));
-  if (isNaN(id)) return c.text('Ungültige ID', 400);
+  if (isNaN(id)) return c.text('Invalid ID', 400);
 
   const result = await db.select().from(spools).where(eq(spools.id, id));
-  if (!result.length) return c.text('Spule nicht gefunden', 404);
+  if (!result.length) return c.text('Spool not found', 404);
 
   const spool = result[0];
 
   return c.html(
     renderSpoolForm({
       action: `/spools/${spool.id}/update`,
-      title: `Eintrag ${spool.brand} ${spool.material} bearbeiten`,
+      title: `Edit Entry ${spool.brand} ${spool.material}`,
       spool: { ...spool, color_hex: spool.color_hex ?? undefined, spool_weight_g: spool.spool_weight_g ?? undefined },
     })
   );
@@ -440,7 +440,7 @@ app.get('/spools/:id/edit', async (c) => {
 // Route für das Aktualisieren einer Spule
 app.post('/spools/:id/update', async (c) => {
   const id = Number(c.req.param('id'));
-  if (isNaN(id)) return c.text('Ungültige ID', 400);
+  if (isNaN(id)) return c.text('Invalid ID', 400);
 
   const formData = await c.req.formData();
   const spoolData = parseSpoolFormData(formData);
@@ -497,10 +497,10 @@ function renderFilamentForm({
       <form action="${action}" method="POST" class="grid gap-6 max-w-2xl">
         <!-- Spulenwahl -->
         <div>
-          <label for="spool_id" class="block text-sm font-medium text-gray-700 mb-1">Spule</label>
+          <label for="spool_id" class="block text-sm font-medium text-gray-700 mb-1">Spool</label>
           <select name="spool_id" id="spool_id" required
             class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
-            <option value="">– Spule auswählen –</option>
+            <option value="">– Select Spool –</option>
             ${spoolOptions
               .map(
                 (s) => `<option value="${s.id}"${s.id === filament?.spool_id ? ' selected' : ''}>
@@ -513,7 +513,7 @@ function renderFilamentForm({
 
         <!-- Name -->
         <div>
-          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Bezeichnung</label>
+          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
           <input name="name" id="name" value="${filament?.name ?? ''}" required
             class="w-full p-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
         </div>
@@ -521,12 +521,12 @@ function renderFilamentForm({
         <!-- Gewicht & Preis -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label for="weight_g" class="block text-sm font-medium text-gray-700 mb-1">Gewicht (gesamt, g)</label>
+            <label for="weight_g" class="block text-sm font-medium text-gray-700 mb-1">Weight (total, g)</label>
             <input name="weight_g" id="weight_g" type="number" value="${filament?.weight_g ?? ''}"
               class="w-full p-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
           </div>
           <div>
-            <label for="price_eur" class="block text-sm font-medium text-gray-700 mb-1">Preis (€)</label>
+            <label for="price_eur" class="block text-sm font-medium text-gray-700 mb-1">Price (€)</label>
             <input name="price_eur" id="price_eur" type="number" step="0.01" value="${filament?.price_eur ?? ''}"
               class="w-full p-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
           </div>
@@ -549,9 +549,9 @@ function renderFilamentForm({
         <!-- Buttons -->
         <div class="flex gap-4 pt-4">
           <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded">
-            ${filament ? 'Speichern' : '➕ Filament hinzufügen'}
+            ${filament ? 'Save' : '➕ Add Filament'}
           </button>
-          <a href="/" class="text-gray-600 underline self-center">Abbrechen</a>
+          <a href="/" class="text-gray-600 underline self-center">Cancel</a>
         </div>
       </form>
     </body>
@@ -565,7 +565,7 @@ app.get('/filaments/new', async (c) => {
   return c.html(
     renderFilamentForm({
       action: '/filaments/new',
-      title: 'Neues Filament anlegen',
+      title: 'Create New Filament',
       spoolOptions,
     })
   );
@@ -589,7 +589,7 @@ app.post('/filaments/new', async (c) => {
   const filamentData = parseFilamentFormData(formData);
 
   if (!filamentData.name || !filamentData.spool_id) {
-    return c.text('Name und Spule sind erforderlich.', 400);
+    return c.text('Name and Spool are required.', 400);
   }
 
   try {
@@ -604,15 +604,15 @@ app.post('/filaments/new', async (c) => {
 
     return c.redirect('/');
   } catch (error: any) {
-    console.error('Fehler beim Speichern:', error.message);
-    return c.text('Fehler beim Speichern: ' + error.message, 500);
+    console.error('Error saving:', error.message);
+    return c.text('Error saving: ' + error.message, 500);
   }
 });
 
 // Route für das Bearbeiten eines Filaments
 app.get('/filaments/:id/edit', async (c) => {
   const id = Number(c.req.param('id'));
-  if (isNaN(id)) return c.text('Ungültige ID', 400);
+  if (isNaN(id)) return c.text('Invalid ID', 400);
 
   const result = await db
     .select({ filament: filaments, spool: spools })
@@ -620,7 +620,7 @@ app.get('/filaments/:id/edit', async (c) => {
     .innerJoin(spools, eq(filaments.spool_id, spools.id))
     .where(eq(filaments.id, id));
 
-  if (!result.length) return c.text('Filament nicht gefunden', 404);
+  if (!result.length) return c.text('Filament not found', 404);
 
   const { filament } = result[0];
   const spoolOptions = await fetchSpools();
@@ -628,7 +628,7 @@ app.get('/filaments/:id/edit', async (c) => {
   return c.html(
     renderFilamentForm({
       action: `/filaments/${filament.id}/update`,
-      title: `Eintrag ${filament.name} editieren`,
+      title: `Edit Entry ${filament.name}`,
       filament,
       spoolOptions,
     })
@@ -638,12 +638,12 @@ app.get('/filaments/:id/edit', async (c) => {
 // Route für das Hinzufügen eines Filaments
 app.post('/filaments/:id/update', async (c) => {
   const id = Number(c.req.param('id'));
-  if (isNaN(id)) return c.text('Ungültige ID', 400);
+  if (isNaN(id)) return c.text('Invalid ID', 400);
 
   const formData = await c.req.formData();
   const filamentData = parseFilamentFormData(formData);
   if (!filamentData.name || !filamentData.spool_id) {
-    return c.text('Name und Material sind erforderlich.', 400);
+    return c.text('Name and Spool are required.', 400);
   }
 
   try {
@@ -661,8 +661,8 @@ app.post('/filaments/:id/update', async (c) => {
 
     return c.redirect('/');
   } catch (error: any) {
-    console.error('Fehler beim Speichern:', error.message);
-    return c.text('Fehler beim Speichern: ' + error.message, 500);
+    console.error('Error saving:', error.message);
+    return c.text('Error saving: ' + error.message, 500);
   }
 });
 
@@ -671,15 +671,15 @@ app.post('/filaments/:id/delete', async (c) => {
   const id = Number(c.req.param('id'));
 
   if (isNaN(id)) {
-    return c.text('Ungültige ID', 400);
+    return c.text('Invalid ID', 400);
   }
 
   try {
     await db.delete(filaments).where(eq(filaments.id, id));
     return c.redirect('/');
   } catch (error: any) {
-    console.error('Fehler beim Löschen:', error.message);
-    return c.text('Fehler beim Löschen: ' + error.message, 500);
+    console.error('Error deleting:', error.message);
+    return c.text('Error deleting: ' + error.message, 500);
   }
 });
 
