@@ -88,7 +88,9 @@ app.get('/', async (c) => {
   const profileParam = c.req.query('profile') || '';
   const profileId = Number(profileParam);
 
+  // Fetch filaments based on the profile ID
   const filaments = await fetchFilaments(isNaN(profileId) ? undefined : profileId);
+  // Fetch all profiles for the filter
   const profileOptions = await fetchProfiles();
 
   return c.html(`
@@ -117,7 +119,7 @@ app.get('/', async (c) => {
               return `
                 <button
                   type="submit"
-                  name="profile_id"
+                  name="profile"
                   value="${s.id}"
                   class="${
                     isActive ? 'bg-sky-700 text-white' : 'bg-gray-200 text-gray-700'
