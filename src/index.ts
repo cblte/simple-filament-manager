@@ -383,8 +383,24 @@ function parseSpoolFormData(formData: FormData): Partial<Spool> {
 app.post('/spools/new', async (c) => {
   const formData = await c.req.formData();
   const spoolData = parseSpoolFormData(formData);
+  if (!spoolData.brand || !spoolData.material || !spoolData.color_name) {
+    return c.text('Marke, Material und Farbname sind erforderlich.', 400);
+  }
+  try {
+    await db.insert(spools).values({
+      brand: spoolData.brand,
+      material: spoolData.material,
+      color_name: spoolData.color_name,
+      color_hex: spoolData.color_hex,
+      material_weight_g: spoolData.material_weight_g ?? 0,
+      spool_weight_g: spoolData.spool_weight_g ?? 0,
+    });
 
-  return c.redirect('/spools');
+    return c.redirect('/spools');
+  } catch (error: any) {
+    console.error('Fehler beim Speichern:', error.message);
+    return c.text('Fehler beim Speichern: ' + error.message, 500);
+  }
 });
 // Route für das Bearbeiten einer Spule
 app.get('/spools/:id/edit', async (c) => {
