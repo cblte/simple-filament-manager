@@ -450,6 +450,29 @@ app.post('/spools/:id/update', async (c) => {
   return c.redirect('/spools');
 });
 
+// Route for deleting a spool
+app.post('/spools/:id/delete', async (c) => {
+  const id = Number(c.req.param('id'));
+  if (isNaN(id)) return c.text('Invalid ID', 400);
+
+  try {
+    // Check if the spool is used by any filament
+    const filamentCount = await db
+      .select({ count: count(filaments.id) })
+      .from(filaments)
+      .where(eq(filaments.spool_id, id));
+
+    if (filamentCount[0]?.count > 0) {
+      return c.text('This spool cannot be deleted because it is used by filaments.', 400);
+    }
+    await db.delete(spools).where(eq(spools.id, id));
+    return c.redirect('/spools');
+  } catch (error: any) {
+    console.error('Error deleting spool:', error.message);
+    return c.text('Error deleting spool: ' + error.message, 500);
+  }
+});
+
 // Funktion zum Rendern des Formulars für Filamente
 function renderFilamentForm({
   action,
