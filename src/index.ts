@@ -331,31 +331,34 @@ function renderProfileForm({
     <body class="p-8 font-sans bg-gray-50 text-gray-800">
       <h1 class="text-2xl font-bold mb-6">${title}</h1>
       <form action="${action}" method="POST" class="grid gap-6 max-w-2xl">
-        <!-- Vendor & Material -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="vendor" class="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
-            <input name="vendor" id="vendor" value="${profile?.vendor ?? ''}" required
-              class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
-          </div>
-          <div>
-            <label for="material" class="block text-sm font-medium text-gray-700 mb-1">Material</label>
-            <input name="material" id="material" value="${profile?.material ?? ''}" required
-              class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
-          </div>
-        </div>
 
-        <!-- Density & Diameter -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="density" class="block text-sm font-medium text-gray-700 mb-1">Density (g/cm³)</label>
-            <input name="density" id="density" type="number" step="0.01" value="${profile?.density ?? 1.24}" required
-              class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
+        <div class="grid grid-cols-1 gap-4 mb-4">
+          <!-- Vendor -->
+          <div class="flex items-center gap-4">
+            <label for="vendor" class="text-sm font-medium text-gray-700 text-right w-32">Vendor</label>
+            <input name="vendor" id="vendor" value="${profile?.vendor ?? ''}" required
+              class="flex-grow h-10 p-1 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
           </div>
-          <div>
-            <label for="diameter" class="block text-sm font-medium text-gray-700 mb-1">Diameter (mm)</label>
+
+          <!-- Material -->
+          <div class="flex items-center gap-4">
+            <label for="material" class="text-sm font-medium text-gray-700 text-right w-32">Material</label>
+            <input name="material" id="material" value="${profile?.material ?? ''}" required
+              class="flex-grow h-10 p-1 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
+          </div>
+
+          <!-- Density -->
+          <div class="flex items-center gap-4">
+            <label for="density" class="text-sm font-medium text-gray-700 text-right w-32">Density (g/cm³)</label>
+            <input name="density" id="density" type="number" step="0.01" value="${profile?.density ?? 1.24}" required
+              class="flex-grow h-10 p-1 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
+          </div>
+
+          <!-- Diameter -->
+          <div class="flex items-center gap-4">
+            <label for="diameter" class="text-sm font-medium text-gray-700 text-right w-32">Diameter (mm)</label>
             <input name="diameter" id="diameter" type="number" step="0.01" value="${profile?.diameter ?? 1.75}" required
-              class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
+              class="flex-grow h-10 p-1 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
           </div>
         </div>
 
@@ -492,71 +495,70 @@ function renderFilamentForm({
       <h1 class="text-2xl font-bold mb-6">${title}</h1>
 
       <form action="${action}" method="POST" class="grid gap-6 max-w-2xl">
+
+      <div class="grid grid-cols-1 gap-4 mb-4">
+
+        <div class="flex items-center gap-4">
+          <label for="name" class="text-sm font-medium text-gray-700 text-right w-32">Name</label>
+          <input name="name" id="name" value="${filament?.name ?? ''}" required
+            class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
+        </div>
+
         <!-- Profile Selection -->
-        <div>
-          <label for="profile_id" class="block text-sm font-medium text-gray-700 mb-1">Profile</label>
-          <select name="profile_id" id="profile_id" required
-            class="w-full p-2 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
+        <div class="flex items-center gap-4">
+            <label for="profile_id" class="text-sm font-medium text-gray-700 text-right w-32">Profile</label>
+            <select name="profile_id" id="profile_id" required
+            class="flex-grow h-10 p-1 border border-gray-300 rounded bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500">
             <option value="">– Select Profile –</option>
             ${profileOptions
               .map(
                 (p) => `<option value="${p.id}"${p.id === filament?.profile_id ? ' selected' : ''}>
-                    ${p.vendor} ${p.material} (${p.diameter}mm)
-                </option>`
+              ${p.vendor} ${p.material} (${p.diameter}mm)
+              </option>`
               )
               .join('')}
-          </select>
-        </div>
-
-        <!-- Name -->
-        <div>
-          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-          <input name="name" id="name" value="${filament?.name ?? ''}" required
-            class="w-full p-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
+            </select>
         </div>
 
         <!-- Color -->
-        <div>
-          <label for="color_hex" class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+        <div class="flex items-center gap-4">
+          <label for="color_hex" class="text-sm font-medium text-gray-700 text-right w-32">Color</label>
           <input type="color" name="color_hex" id="color_hex" value="${filament?.color_hex ?? '#000000'}" required
-            class="w-full h-10 p-1 border border-gray-300 rounded bg-white shadow-sm cursor-pointer focus:ring-sky-500 focus:border-sky-500">
-        </div>
-
-        <!-- Weight & Spool Weight -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="weight_g" class="block text-sm font-medium text-gray-700 mb-1">Total Weight (g)</label>
-            <input name="weight_g" id="weight_g" type="number" value="${filament?.weight_g ?? '1000'}" required
-              class="w-full p-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
-          </div>
-          <div>
-            <label for="spool_weight_g" class="block text-sm font-medium text-gray-700 mb-1">Spool Weight (g)</label>
-            <input name="spool_weight_g" id="spool_weight_g" type="number" value="${
-              filament?.spool_weight_g ?? 200
-            }" required
-              class="w-full p-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
-          </div>
+              class="flex-grow h-10 p-1 border border-gray-300 rounded bg-white shadow-sm cursor-pointer focus:ring-sky-500 focus:border-sky-500">
         </div>
 
         <!-- Price -->
-        <div>
-          <label for="price_eur" class="block text-sm font-medium text-gray-700 mb-1">Price (€)</label>
+        <div class="flex items-center gap-4">
+          <label for="price_eur" class="text-sm font-medium text-gray-700 text-right w-32">Price (€)</label>
           <input name="price_eur" id="price_eur" type="number" step="0.01" value="${filament?.price_eur ?? ''}"
-            class="w-full p-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
+            class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
+        </div>
+
+        <div class="flex items-center gap-4">
+          <label for="weight_g" class="text-sm font-medium text-gray-700 text-right w-32">Total Weight (g)</label>
+          <input name="weight_g" id="weight_g" type="number" value="${filament?.weight_g ?? '1000'}" required
+            class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
+        </div>
+
+        <div class="flex items-center gap-4">
+          <label for="spool_weight_g" class="text-sm font-medium text-gray-700 text-right w-32">Spool Weight (g)</label>
+          <input name="spool_weight_g" id="spool_weight_g" type="number" value="${
+            filament?.spool_weight_g ?? 200
+          }" required
+            class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
         </div>
 
         <!-- Temperature -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="print_temp_min" class="block text-sm font-medium text-gray-700 mb-1">Min Temp (°C)</label>
-            <input name="print_temp_min" id="print_temp_min" type="number" value="${filament?.print_temp_min ?? ''}"
-              class="w-full p-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
-          </div>
-          <div>
-            <label for="print_temp_max" class="block text-sm font-medium text-gray-700 mb-1">Max Temp (°C)</label>
-            <input name="print_temp_max" id="print_temp_max" type="number" value="${filament?.print_temp_max ?? ''}"
-              class="w-full p-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
-          </div>
+        <div class="flex items-center gap-4">
+          <label for="print_temp_min" class="text-sm font-medium text-gray-700 text-right w-32">Min Temp (°C)</label>
+          <input name="print_temp_min" id="print_temp_min" type="number" value="${filament?.print_temp_min ?? ''}"
+            class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
+        </div>
+
+        <div class="flex items-center gap-4">
+          <label for="print_temp_max" class="text-sm font-medium text-gray-700 text-right w-32">Max Temp (°C)</label>
+          <input name="print_temp_max" id="print_temp_max" type="number" value="${filament?.print_temp_max ?? ''}"
+            class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
         </div>
 
         <!-- Buttons -->
