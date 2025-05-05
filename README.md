@@ -191,6 +191,35 @@ This is useful for lightweight deployments or prebuilt environments.
 
 You can also run the app using Docker:
 
+### Dockerfile (example)
+
+```Dockerfile
+FROM oven/bun:latest
+
+WORKDIR /app
+COPY . .
+
+RUN bun install && \
+    bun build src/index.ts --outfile dist/index.js && \
+    bunx @tailwindcss/cli -i ./src/styles/global.css -o ./public/output.css --minify
+
+EXPOSE 3000
+CMD ["bun", "run", "dist/index.js"]
+```
+
+### Example build & run
+
+```bash
+docker build -t simple-filament-manager .
+docker run -p 3000:3000 --env-file .env simple-filament-manager
+```
+
+Make sure your `.env` and any required data (e.g. volume-mounted PostgreSQL) are correctly configured.
+
+---
+
+You can also run the app using Docker:
+
 ### Docker Compose (App + PostgreSQL)
 
 Create a `docker-compose.yml` file:
@@ -232,37 +261,6 @@ Then run:
 ```bash
 docker compose up --build
 ```
-
-### Dockerfile (example)
-
-You can also run the app using Docker:
-
-### Dockerfile (example)
-
-```Dockerfile
-FROM oven/bun:latest
-
-WORKDIR /app
-COPY . .
-
-RUN bun install && \
-    bun build src/index.ts --outfile dist/index.js && \
-    bunx @tailwindcss/cli -i ./src/styles/global.css -o ./public/output.css --minify
-
-EXPOSE 3000
-CMD ["bun", "run", "dist/index.js"]
-```
-
-### Example build & run
-
-```bash
-docker build -t simple-filament-manager .
-docker run -p 3000:3000 --env-file .env simple-filament-manager
-```
-
-Make sure your `.env` and any required data (e.g. volume-mounted PostgreSQL) are correctly configured.
-
----
 
 ## 📆 Planned / TODO
 
