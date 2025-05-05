@@ -159,24 +159,34 @@ app.get('/', async (c) => {
 
                           ${(() => {
                             return `
-                          <p class="text-sm text-gray-700">
-                            <strong>Remaining::</strong> ${f.remaining_g}g
+                            <p class="text-sm text-gray-700">
+                            <strong>Remaining:</strong> ${f.remaining_g}g
                             <span class="text-xs text-gray-500">(${f.weight_g}g - ${f.spool_weight_g}g)</span>
-                          </p>
-                          <div class="">
+                            </p>
+                            <div class="">
                             <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                               <div class="h-full rounded-full transition-all duration-300"
-                                style="width: ${percentage}%; background-color: ${
-                              percentage > 60
+                              style="width: ${percentage}%; background-color: ${
+                              percentage > 87.5
+                                ? '#16a34a' // darker green
+                                : percentage > 75
                                 ? '#10b981' // green
-                                : percentage > 30
+                                : percentage > 62.5
+                                ? '#3b82f6' // blue
+                                : percentage > 50
+                                ? '#60a5fa' // lighter blue
+                                : percentage > 37.5
                                 ? '#f59e0b' // yellow
-                                : '#ef4444' // red
+                                : percentage > 25
+                                ? '#fbbf24' // lighter yellow
+                                : percentage > 12.5
+                                ? '#ef4444' // red
+                                : '#dc2626' // darker red
                             };">
                               </div>
                             </div>
                             <p class="text-xs text-gray-500 mt-1">${percentage}% available</p>
-                          </div>`;
+                            </div>`;
                           })()}
 
                           <p class="text-sm text-gray-700">
@@ -551,7 +561,10 @@ function renderFilamentForm({
               type="number"
               value="${filament?.weight_g ?? '1200'}"
               required
-              class="h-10 px-2 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500"
+              ${isEdit ? 'readonly data-readonly="true"' : ''}
+              class="h-10 px-2 border border-gray-300 rounded shadow-sm ${
+                isEdit ? 'bg-gray-100' : 'bg-white'
+              } focus:ring-sky-500 focus:border-sky-500"
             />
             <span class="text-sm text-gray-500 mt-1">
               Weight of the entire spool with filament (brutto weight)
@@ -562,11 +575,51 @@ function renderFilamentForm({
         <!-- Spool Weight -->
         <div class="flex items-center gap-4">
           <label for="spool_weight_g" class="text-sm font-medium text-gray-700 text-right w-32">Spool Weight (g)</label>
-          <input name="spool_weight_g" id="spool_weight_g" type="number" value="${
-            filament?.spool_weight_g ?? 200
-          }" required
-            class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm bg-white focus:ring-sky-500 focus:border-sky-500">
+          <input
+            name="spool_weight_g"
+            id="spool_weight_g"
+            type="number"
+            value="${filament?.spool_weight_g ?? 200}"
+            required
+            ${isEdit ? 'readonly data-readonly="true"' : ''}
+            class="flex-grow h-10 p-1 border border-gray-300 rounded shadow-sm ${
+              isEdit ? 'bg-gray-100' : 'bg-white'
+            } focus:ring-sky-500 focus:border-sky-500">
         </div>
+
+        ${
+          isEdit
+            ? `
+        <!-- Toggle for edit mode -->
+        <div class="flex items-center gap-4 mt-2">
+          <label class="text-sm font-medium text-gray-700 text-right w-32"></label>
+          <div class="flex items-center">
+            <input type="checkbox" id="toggleReadonly" class="mr-2 h-4 w-4 text-sky-600 focus:ring-sky-500">
+            <label for="toggleReadonly" class="text-sm text-amber-600 font-medium">
+              Enable editing of weight values (use with caution)
+            </label>
+          </div>
+        </div>
+
+        <script>
+          document.getElementById('toggleReadonly').addEventListener('change', function() {
+            const readonlyFields = document.querySelectorAll('[data-readonly="true"]');
+            readonlyFields.forEach(field => {
+              if (this.checked) {
+                field.removeAttribute('readonly');
+                field.classList.remove('bg-gray-100');
+                field.classList.add('bg-yellow-50', 'border-amber-300');
+              } else {
+                field.setAttribute('readonly', 'readonly');
+                field.classList.add('bg-gray-100');
+                field.classList.remove('bg-yellow-50', 'border-amber-300');
+              }
+            });
+          });
+        </script>
+        `
+            : ''
+        }
 
         ${
           isEdit
