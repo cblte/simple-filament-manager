@@ -200,7 +200,7 @@ WORKDIR /app
 COPY . .
 
 RUN bun install && \
-    bun build src/index.ts --outfile dist/index.js && \
+    bun build src/index.ts --outfile dist/index.js --target bun && \
     bunx @tailwindcss/cli -i ./src/styles/global.css -o ./public/output.css --minify
 
 EXPOSE 3000
